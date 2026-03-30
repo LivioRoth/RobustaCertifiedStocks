@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICE Robusta Certified Stock Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .top-banner {
+            background: linear-gradient(90deg, #006666 0%, #008080 100%);
+            color: white;
+            padding: 10px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        
+        .top-banner .title {
+            font-weight: normal;
+        }
+        
+        .top-banner .update-info {
+            text-align: right;
+            font-size: 9px;
+            letter-spacing: 2px;
+        }
+        
+        .top-banner .update-time {
+            color: #99cc66;
+        }
+        
+        .top-banner .auto-update {
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            padding: 15px 17px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        
+        .stat-card h3 {
+            color: #888;
+            font-size: 8px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: normal;
+        }
+        
+        .stat-card .value {
+            font-size: 29px;
+            color: #006666;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+            line-height: 1;
+        }
+        
+        .stat-card .change-line {
+            font-size: 9px;
+            color: #666;
+            margin: 3px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card .change-line.dod {
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .stat-card .change-line .positive {
+            color: #d32f2f;
+        }
+        
+        .stat-card .change-line .negative {
+            color: #388e3c;
+        }
+        
+        .chart-section {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        
+        .chart-section h2 {
+            color: #333;
+            font-size: 10px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            font-weight: normal;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: 100% !important;
+        }
+        
+        .range-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .range-btn {
+            background: white;
+            border: 1px solid #008080;
+            color: #008080;
+            padding: 5px 14px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            font-weight: normal;
+        }
+        
+        .range-btn:hover {
+            background: #f5f5f5;
+        }
+        
+        .range-btn.active {
+            background: #008080;
+            color: white;
+        }
+        
+        .port-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .port-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .port-item .port-name {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .port-item .port-value {
+            font-size: 13px;
+            color: #006666;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #999;
+            font-size: 9px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-banner">
+        <div class="title">ICE Robusta Certified Stock Dashboard</div>
+        <div class="update-info">
+            <div class="update-time">LAST UPDATE: <span id="lastUpdateBanner">Loading...</span></div>
+            <div class="auto-update">AUTO-UPDATED DAILY</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Valid Lots</h3>
+                <div class="value" id="totalValid">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Pending</h3>
+                <div class="value" id="totalPending">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Lots (Valid + Pending)</h3>
+                <div class="value" id="grandTotal">-</div>
+                <div class="change-line dod">DOD: <span id="grandTotalDOD">-</span></div>
+                <div class="change-line">MTD: <span id="grandTotalMTD">-</span></div>
+                <div class="change-line">YTD: <span id="grandTotalYTD">-</span></div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>Certified Stock Evolution</h2>
+            <div class="range-buttons">
+                <button class="range-btn active" onclick="setDateRange('all')">All</button>
+                <button class="range-btn" onclick="setDateRange('ytd')">YTD</button>
+                <button class="range-btn" onclick="setDateRange('3m')">3M</button>
+                <button class="range-btn" onclick="setDateRange('1m')">1M</button>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="stocksChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>Port Distribution</h2>
+            <div class="port-grid" id="portGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="footer">
+            Data Source: ICE Futures Europe (Report 173) | Powered by Sucafina Trading - Tokyo
+        </div>
+    </div>
+
+    <script>
+        // Placeholder for data - will be injected by Python script
+        const RAW_DATA = [
+  {
+    "date": "01-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "ANT",
+    "valid": 2657,
+    "nonTenderable": 2,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "LON",
+    "valid": 1823,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "01-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "ANT",
+    "valid": 2754,
+    "nonTenderable": 2,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "LON",
+    "valid": 1809,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "02-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "ANT",
+    "valid": 2745,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "LON",
+    "valid": 1809,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "03-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "ANT",
+    "valid": 2708,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "LON",
+    "valid": 1809,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "04-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "ANT",
+    "valid": 2645,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "LON",
+    "valid": 1799,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "05-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "ANT",
+    "valid": 2636,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "LON",
+    "valid": 1789,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "08-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "ANT",
+    "valid": 2636,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "LON",
+    "valid": 1779,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "09-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "ANT",
+    "valid": 2636,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "LON",
+    "valid": 1769,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "10-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "ANT",
+    "valid": 2633,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "LON",
+    "valid": 1759,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "11-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "ANT",
+    "valid": 2626,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "LON",
+    "valid": 1733,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "12-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "ANT",
+    "valid": 2626,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "BAR",
+    "valid": 27,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "LON",
+    "valid": 1713,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "15-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "ANT",
+    "valid": 2516,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "BAR",
+    "valid": 24,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "FEL",
+    "valid": 131,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "LON",
+    "valid": 1677,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "17-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "ANT",
+    "valid": 2516,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "BAR",
+    "valid": 24,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "FEL",
+    "valid": 123,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "LON",
+    "valid": 1622,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "18-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "ANT",
+    "valid": 2512,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "BAR",
+    "valid": 24,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "FEL",
+    "valid": 110,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "LON",
+    "valid": 1611,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "19-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "ANT",
+    "valid": 2478,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "BAR",
+    "valid": 24,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "FEL",
+    "valid": 98,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "LON",
+    "valid": 1611,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "22-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "ANT",
+    "valid": 2530,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "BAR",
+    "valid": 24,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "FEL",
+    "valid": 88,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "LON",
+    "valid": 1611,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "23-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "AMS",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "ANT",
+    "valid": 2516,
+    "nonTenderable": 1,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "BAR",
+    "valid": 24,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "BRE",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "FEL",
+    "valid": 78,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "GEN",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "HAM",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "LEH",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "LIV",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "LON",
+    "valid": 1611,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "NOR",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "ROT",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  },
+  {
+    "date": "24-Mar-2026",
+    "port": "TRI",
+    "valid": 0,
+    "nonTenderable": 0,
+    "suspended": 0
+  }
+];
+        
+        let currentRange = 'all';
+        let stocksChart = null;
+        
+        // Port name mapping
+        const portNames = {
+            'AMS': 'Amsterdam',
+            'ANT': 'Antwerp',
+            'BAR': 'Barcelona',
+            'BRE': 'Bremen',
+            'FEL': 'Felixstowe',
+            'GEN': 'Genoa',
+            'HAM': 'Hamburg',
+            'LEH': 'Le Havre',
+            'LIV': 'Liverpool',
+            'LON': 'London',
+            'NOR': 'New Orleans',
+            'ROT': 'Rotterdam',
+            'TRI': 'Trieste'
+        };
+        
+        function parseData() {
+            const byDate = {};
+            
+            RAW_DATA.forEach(row => {
+                const date = row.date;
+                if (!byDate[date]) {
+                    byDate[date] = {
+                        date: date,
+                        valid: 0,
+                        nonTenderable: 0,
+                        suspended: 0,
+                        ports: {}
+                    };
+                }
+                
+                byDate[date].valid += row.valid;
+                byDate[date].nonTenderable += row.nonTenderable;
+                byDate[date].suspended += row.suspended;
+                
+                if (!byDate[date].ports[row.port]) {
+                    byDate[date].ports[row.port] = {
+                        valid: 0,
+                        nonTenderable: 0,
+                        suspended: 0
+                    };
+                }
+                
+                byDate[date].ports[row.port].valid += row.valid;
+                byDate[date].ports[row.port].nonTenderable += row.nonTenderable;
+                byDate[date].ports[row.port].suspended += row.suspended;
+            });
+            
+            return Object.values(byDate).sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+        
+        function filterByDateRange(data, range) {
+            if (range === 'all') return data;
+            
+            const now = new Date(data[data.length - 1].date);
+            let startDate;
+            
+            if (range === 'ytd') {
+                startDate = new Date(now.getFullYear(), 0, 1);
+            } else if (range === '3m') {
+                startDate = new Date(now);
+                startDate.setMonth(startDate.getMonth() - 3);
+            } else if (range === '1m') {
+                startDate = new Date(now);
+                startDate.setMonth(startDate.getMonth() - 1);
+            }
+            
+            return data.filter(d => new Date(d.date) >= startDate);
+        }
+        
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+        
+        function formatChange(change) {
+            if (change === 0) return '0';
+            const sign = change > 0 ? '▲ ' : '▼ ';
+            const className = change > 0 ? 'positive' : 'negative';
+            return `<span class="${className}">${sign}${Math.abs(change).toLocaleString()}</span>`;
+        }
+        
+        function getMonthStart(data) {
+            const latest = data[data.length - 1];
+            const latestDate = new Date(latest.date);
+            const monthStart = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1);
+            
+            // Find closest date to month start
+            for (let i = data.length - 1; i >= 0; i--) {
+                const d = new Date(data[i].date);
+                if (d <= monthStart) {
+                    return data[i];
+                }
+            }
+            return data[0];
+        }
+        
+        function getYearStart(data) {
+            const latest = data[data.length - 1];
+            const latestDate = new Date(latest.date);
+            const yearStart = new Date(latestDate.getFullYear(), 0, 1);
+            
+            // Find closest date to year start
+            for (let i = data.length - 1; i >= 0; i--) {
+                const d = new Date(data[i].date);
+                if (d <= yearStart) {
+                    return data[i];
+                }
+            }
+            return data[0];
+        }
+        
+        function updateStats(data) {
+            if (data.length < 2) return;
+            
+            const latest = data[data.length - 1];
+            const previous = data[data.length - 2];
+            const monthStart = getMonthStart(data);
+            const yearStart = getYearStart(data);
+            
+            // Format date
+            const dateObj = new Date(latest.date);
+            const formattedDate = dateObj.toISOString().split('T')[0];
+            document.getElementById('lastUpdateBanner').textContent = formattedDate;
+            
+            // Total Valid
+            document.getElementById('totalValid').textContent = formatNumber(latest.valid);
+            
+            // Total Pending (Non-Tenderable)
+            document.getElementById('totalPending').textContent = formatNumber(latest.nonTenderable);
+            
+            // Grand Total (Valid + Pending) with DOD, MTD, YTD
+            const grandTotal = latest.valid + latest.nonTenderable;
+            const prevGrandTotal = previous.valid + previous.nonTenderable;
+            const monthGrandTotal = monthStart.valid + monthStart.nonTenderable;
+            const yearGrandTotal = yearStart.valid + yearStart.nonTenderable;
+            
+            document.getElementById('grandTotal').textContent = formatNumber(grandTotal);
+            const totalDOD = grandTotal - prevGrandTotal;
+            const totalMTD = grandTotal - monthGrandTotal;
+            const totalYTD = grandTotal - yearGrandTotal;
+            document.getElementById('grandTotalDOD').innerHTML = formatChange(totalDOD);
+            document.getElementById('grandTotalMTD').innerHTML = formatChange(totalMTD);
+            document.getElementById('grandTotalYTD').innerHTML = formatChange(totalYTD);
+        }
+        
+        function updatePortGrid(data) {
+            if (data.length === 0) return;
+            
+            const latest = data[data.length - 1];
+            const portGrid = document.getElementById('portGrid');
+            portGrid.innerHTML = '';
+            
+            const sortedPorts = Object.entries(latest.ports)
+                .filter(([port, values]) => values.valid > 0 || values.nonTenderable > 0 || values.suspended > 0)
+                .sort((a, b) => b[1].valid - a[1].valid);
+            
+            sortedPorts.forEach(([port, values]) => {
+                const portItem = document.createElement('div');
+                portItem.className = 'port-item';
+                portItem.innerHTML = `
+                    <div class="port-name">${portNames[port] || port}</div>
+                    <div class="port-value">${formatNumber(values.valid)}</div>
+                `;
+                portGrid.appendChild(portItem);
+            });
+        }
+        
+        function createStocksChart(data) {
+            const ctx = document.getElementById('stocksChart').getContext('2d');
+            
+            if (stocksChart) {
+                stocksChart.destroy();
+            }
+            
+            stocksChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [
+                        {
+                            label: 'Valid',
+                            data: data.map(d => d.valid),
+                            backgroundColor: '#006666',
+                            borderColor: 'transparent',
+                            borderWidth: 0,
+                            barPercentage: 0.9,
+                            categoryPercentage: 0.95
+                        },
+                        {
+                            label: 'Pending',
+                            data: data.map(d => d.nonTenderable),
+                            backgroundColor: '#99cc66',
+                            borderColor: 'transparent',
+                            borderWidth: 0,
+                            barPercentage: 0.9,
+                            categoryPercentage: 0.95
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#666',
+                                font: {
+                                    family: 'Courier New',
+                                    size: 10
+                                },
+                                padding: 15,
+                                usePointStyle: true,
+                                boxWidth: 12,
+                                boxHeight: 12
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#006666',
+                            borderWidth: 1,
+                            padding: 10,
+                            titleFont: {
+                                family: 'Courier New',
+                                size: 11
+                            },
+                            bodyFont: {
+                                family: 'Courier New',
+                                size: 10
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                color: '#999',
+                                maxTicksLimit: 15,
+                                font: {
+                                    family: 'Courier New',
+                                    size: 9
+                                }
+                            },
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            ticks: {
+                                color: '#999',
+                                font: {
+                                    family: 'Courier New',
+                                    size: 9
+                                },
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                color: '#eee',
+                                drawBorder: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function setDateRange(range) {
+            currentRange = range;
+            
+            // Update button states
+            document.querySelectorAll('.range-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateCharts();
+        }
+        
+        function updateCharts() {
+            const data = parseData();
+            const filteredData = filterByDateRange(data, currentRange);
+            
+            updateStats(data);
+            updatePortGrid(data);
+            createStocksChart(filteredData);
+        }
+        
+        // Initialize
+        if (typeof Chart !== 'undefined') {
+            updateCharts();
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Re-initialize after Chart.js loads
+        window.addEventListener('load', () => {
+            updateCharts();
+        });
+    </script>
+</body>
+</html>
