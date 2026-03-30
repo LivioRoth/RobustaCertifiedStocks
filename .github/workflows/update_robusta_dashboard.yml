@@ -1,0 +1,86 @@
+name: Update Robusta Dashboard
+
+on:
+  schedule:
+    # Run every business day at 15:00 UTC (after ICE publishes data)
+    - cron: '0 15 * * 1-5'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-dashboard:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests
+      
+      - name: Download latest Robusta data
+        run: |
+          python3 << 'EOF'
+          import requests
+          from datetime import datetime
+          import time
+          
+          # Get today's date
+          date_str = datetime.now().strftime('%Y%m%d')
+          
+          # Try different time patterns
+          time_patterns = ['103020', '103051', '103118', '103207', '103104', '131152', 
+                          '103027', '103332', '103500', '103733', '103026', '103040', 
+                          '103445', '103319', '103426', '103007', '103359']
+          
+          success = False
+          for time_pattern in time_patterns:
+              url = f"https://www.ice.com/marketdata/publicdocs/liffe/coffee/stock_reports/Stock_Report_RC_{date_str}_{time_pattern}.csv"
+              
+              try:
+                  response = requests.get(url, timeout=10)
+                  if response.status_code == 200:
+                      filename = f"Stock_Report_RC_{date_str}_{time_pattern}.csv"
+                      with open(filename, 'wb') as f:
+                          f.write(response.content)
+                      print(f"✓ Downloaded: {filename}")
+                      success = True
+                      break
+              except:
+                  continue
+              
+              time.sleep(1)  # Rate limiting
+          
+          if not success:
+              # Try without time pattern
+              url = f"https://www.ice.com/marketdata/publicdocs/liffe/coffee/stock_reports/Stock_Report_RC_{date_str}.csv"
+              try:
+                  response = requests.get(url, timeout=10)
+                  if response.status_code == 200:
+                      filename = f"Stock_Report_RC_{date_str}.csv"
+                      with open(filename, 'wb') as f:
+                          f.write(response.content)
+                      print(f"✓ Downloaded: {filename}")
+                      success = True
+              except:
+                  pass
+          
+          if not success:
+              print("⚠ No data available for today yet")
+          EOF
+      
+      - name: Update dashboard
+        run: |
+          python3 update_robusta_dashboard.py
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update Robusta dashboard - $(date +'%Y-%m-%d')" && git push)
