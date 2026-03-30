@@ -1,0 +1,82 @@
+name: Load Historical Data
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  load-history:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: pip install requests
+      
+      - name: Download historical data (3 years)
+        run: python3 load_robusta_history_improved.py
+      
+      - name: Update dashboard with all data
+        run: python3 update_robusta_dashboard.py
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Add 3 years of historical Robusta data - $(date +'%Y-%m-%d')"
+          git push
+```
+
+4. Click **"Commit new file"**
+
+---
+
+### Step 2: Enable GitHub Pages
+
+1. Go to **"Settings"** (top menu in your repo)
+2. Scroll down and click **"Pages"** (left sidebar)
+3. Under **"Build and deployment"**:
+   - **Source**: Deploy from a branch
+   - **Branch**: `main`
+   - **Folder**: `/ (root)`
+4. Click **"Save"**
+
+You should see a message: *"Your site is ready to be published at https://YOUR_USERNAME.github.io/RobustaCertifiedStocks/"*
+
+---
+
+### Step 3: Run the Historical Data Workflow
+
+1. Go to **"Actions"** tab (top menu)
+2. Click **"Load Historical Data"** (left sidebar)
+3. Click **"Run workflow"** (right side)
+4. Click the green **"Run workflow"** button
+
+**This will start the process!** ⏳
+
+---
+
+### Step 4: Monitor Progress
+
+1. You'll see the workflow running (yellow circle 🟡)
+2. Click on it to see real-time progress
+3. **It will take 30-45 minutes** to download ~750 files
+4. When it turns green ✅, the historical data is loaded!
+
+---
+
+### Step 5: Check Your Dashboard
+
+After the workflow completes (turns green):
+
+1. **Wait 1-2 minutes** for GitHub Pages to rebuild
+2. **Visit your dashboard**:
+```
+   https://YOUR_USERNAME.github.io/RobustaCertifiedStocks/
